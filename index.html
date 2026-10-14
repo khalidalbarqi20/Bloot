@@ -156,14 +156,20 @@ function calc(k){
  var info=['a','b'].map(function(t){
   var top=-1,pts=0,un=0;
   c.pr.forEach(function(p,j){var n=Math.max(0,parseInt($(k+t+j).value)||0);if(n){top=j;pts+=n*p[1];un+=n*p[2]}});
-  var bal=c.bal?Math.max(0,parseInt($(k+t+'bal').value)||0)*c.bal:0;
-  return {top:top,pts:pts,un:un,bal:bal};
+  var nb=c.bal?Math.max(0,parseInt($(k+t+'bal').value)||0):0;
+  return {top:top,pts:pts,un:un,bal:nb*(c.bal||0),bp:nb*20};
  });
- var A=info[0],B=info[1],pa=0,pb=0;
- if(A.top>B.top||(A.top===B.top&&A.pts>B.pts))pa=A.un;
- else if(B.top>A.top||(A.top===B.top&&B.pts>A.pts))pb=B.un;
+ var A=info[0],B=info[1],pa=0,pb=0,ppa=0,ppb=0;
+ if(A.top>B.top||(A.top===B.top&&A.pts>B.pts)){pa=A.un;ppa=A.pts}
+ else if(B.top>A.top||(A.top===B.top&&B.pts>A.pts)){pb=B.un;ppb=B.pts}
  var ta=u[0]+pa+A.bal,tb=u[1]+pb+B.bal;
- var mine=by===0?ta:tb,other=by===0?tb:ta;
+ var mine=by===0?ta:tb,other=by===0?tb:ta,ptsLine='';
+ if(k==='hakam'){
+  var q=[0,0];q[by]=x;q[1-by]=c.tot-x;
+  var qa=q[0]+ppa+A.bp,qb=q[1]+ppb+B.bp;
+  mine=by===0?qa:qb;other=by===0?qb:qa;
+  ptsLine='<div>النقاط — '+esc(S.n[0])+': '+qa+' | '+esc(S.n[1])+': '+qb+' (من '+(qa+qb)+')</div>';
+ }
  var tie=mine===other,ok=mine>other,fa=ta,fb=tb;
  if(!ok&&!tie){
   var all=c.base+pa+pb;
@@ -172,7 +178,7 @@ function calc(k){
  LAST[k]=[fa,fb];
  var bn=esc(S.n[by]);
  var msg=tie?'تعادل':(ok?'نجح '+bn+' (المشتري)':'خسر '+bn+' (المشتري)');
- $(k+'res').innerHTML='<div>'+esc(S.n[0])+': '+ta+' &nbsp;|&nbsp; '+esc(S.n[1])+': '+tb+'</div>'+
+ $(k+'res').innerHTML=ptsLine+'<div>الأعداد — '+esc(S.n[0])+': '+ta+' | '+esc(S.n[1])+': '+tb+'</div>'+
   '<div class="t" style="color:var(--'+(ok?'ok':(tie?'fg':'bad'))+')">'+msg+'</div>'+
   '<div>النتيجة النهائية — '+esc(S.n[0])+': '+fa+' ، '+esc(S.n[1])+': '+fb+'</div>'+
   '<button class="reg" onclick="reg(\''+k+'\')">سجّلها في النتيجة</button>';
