@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1530">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="البلوت">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<title>حاسبة البلوت</title>
+<style>
+:root{--bg:#0b1530;--card:#15234d;--fg:#ffffff;--ok:#4ade80;--bad:#f87171;--line:color-mix(in srgb,var(--fg) 18%,transparent);--mut:color-mix(in srgb,var(--fg) 60%,transparent);color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Tahoma,sans-serif;max-width:520px;margin-inline:auto;padding:16px}
+button{font:inherit;cursor:pointer;border:0;color:inherit}
+.top{display:flex;justify-content:flex-start}
+.gear{background:none;font-size:24px;padding:4px}
+.sc{display:flex;justify-content:space-around;text-align:center}
+.sc b{display:block;font-size:34px}.sc span{font-size:68px;font-weight:300}
+.ban{min-height:28px;text-align:center;font-weight:700;color:var(--ok);margin:6px 0}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.c{width:104px;height:104px;border-radius:50%;border:6px solid var(--line);background:var(--card);color:var(--fg);font-size:30px;text-align:center}
+.go{width:104px;height:104px;border-radius:50%;background:var(--fg);color:var(--bg);font-size:22px;font-weight:700}
+.act{display:flex;justify-content:space-around;margin:18px 0}
+.act button{background:none;font-size:18px;padding:6px 14px;border-bottom:3px solid}
+.nw{color:var(--ok)}.un{color:var(--bad)}
+table{width:100%;border-collapse:collapse;text-align:center;font-size:22px}
+td{padding:12px;border-top:1px solid var(--line)}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-top:18px}
+summary{font-size:20px;font-weight:700;cursor:pointer}
+label{display:block;font-size:14px;color:var(--mut);margin:10px 0 4px}
+select,.n{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-size:17px;text-align:center}
+.g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.g div{font-size:12px;color:var(--mut);text-align:center}
+.bsel{display:flex;gap:10px}
+.bsel button{flex:1;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);font-size:18px}
+.bsel button.sel{background:var(--ok);border-color:var(--ok);color:#04210a;font-weight:700;box-shadow:0 0 14px var(--ok)}
+.calc{width:100%;margin-top:12px;padding:12px;border-radius:12px;background:var(--fg);color:var(--bg);font-weight:700;font-size:17px}
+.res{margin-top:12px;line-height:1.8}.res .t{font-size:19px;font-weight:700}
+.reg{margin-top:8px;width:100%;padding:10px;border-radius:12px;background:none;border:1px solid var(--line)}
+.set{display:none}.set.on{display:block}
+.srow{display:flex;gap:8px;align-items:center;margin-top:8px}.srow input[type=color]{width:46px;height:36px;border:0;padding:0;background:none}
+#pop{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:9;padding:20px}
+#pop.on{display:flex}
+.box{background:var(--card);border:2px solid var(--ok);border-radius:22px;padding:30px 22px;text-align:center;width:100%;max-width:360px}
+.box h1{font-size:34px;margin:0 0 20px}
+.box button{padding:12px 18px;border-radius:12px;background:var(--fg);color:var(--bg);font-weight:700;margin:4px}
+:root{--sh:0 6px 14px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.1)}
+.c,.go,.card,.n,.bsel button,.calc,.reg,.box,.box button,.act button{box-shadow:var(--sh)}
+.c{box-shadow:inset 0 4px 10px rgba(0,0,0,.5),0 2px 0 rgba(255,255,255,.1)}
+.sc span,.sc b{text-shadow:0 4px 10px rgba(0,0,0,.5)}
+.go,.calc,.bsel button,.box button,.act button,.reg{transition:transform .1s,box-shadow .1s}
+.go:active,.calc:active,.bsel button:active,.box button:active,.act button:active,.reg:active{transform:translateY(2px);box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.g .n{padding:10px 2px}
+.card{box-shadow:0 10px 24px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08)}
+</style>
+</head>
+<body>
+<div class="top"><button class="gear" onclick="$('set').classList.toggle('on')">⚙️</button></div>
+<div class="card set" id="set" style="margin-top:0">
+<h2 style="margin:0 0 6px;font-size:20px">الإعدادات</h2>
+<label>اسم الفريق الأول</label><input class="n" id="n0" oninput="setName(0,this.value)">
+<label>اسم الفريق الثاني</label><input class="n" id="n1" oninput="setName(1,this.value)">
+<label>الألوان</label>
+<div class="srow"><input type="color" id="c_bg" oninput="setCol('bg',this.value)">الخلفية</div>
+<div class="srow"><input type="color" id="c_card" oninput="setCol('card',this.value)">البطاقات</div>
+<div class="srow"><input type="color" id="c_fg" oninput="setCol('fg',this.value)">النص</div>
+<div class="srow"><input type="color" id="c_ok" oninput="setCol('ok',this.value)">لون التحديد</div>
+<button class="reg" onclick="resetCol()">إعادة الألوان الافتراضية</button>
+</div>
+<div class="sc"><div><b class="nm0"></b><span id="sa">0</span></div><div><b class="nm1"></b><span id="sb">0</span></div></div>
+<div class="ban" id="ban"></div>
+<div class="row">
+<input class="c" id="ia" type="number" inputmode="numeric">
+<button class="go" onclick="addRound()">احسب</button>
+<input class="c" id="ib" type="number" inputmode="numeric">
+</div>
+<div class="act"><button class="nw" onclick="newGame()">صكة جديدة</button><button class="un" onclick="undo()">تراجع</button></div>
+<table><tbody id="hist"></tbody></table>
+<div id="calcs"></div>
+<div id="pop"><div class="box"><h1 id="popt"></h1><button onclick="newGame(1);closePop()">صكة جديدة</button><button onclick="closePop()">إغلاق</button></div></div>
+<script>
+var WIN=152,H=[],BUY={sun:0,hakam:0};
+var DEF={bg:'#0b1530',card:'#15234d',fg:'#ffffff',ok:'#4ade80'};
+var S={n:['لنا','لهم'],c:Object.assign({},DEF)};
+var $=function(i){return document.getElementById(i)};
+try{H=JSON.parse(localStorage.getItem('bl')||'[]')}catch(e){}
+try{var s=JSON.parse(localStorage.getItem('blset')||'null');if(s){S.n=s.n||S.n;Object.assign(S.c,s.c)}}catch(e){}
+function saveS(){try{localStorage.setItem('blset',JSON.stringify(S))}catch(e){}}
+function save(){try{localStorage.setItem('bl',JSON.stringify(H))}catch(e){}}
+function esc(t){return String(t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+function theme(){var r=document.documentElement.style;for(var k in S.c){r.setProperty('--'+k,S.c[k]);$('c_'+k).value=S.c[k]}}
+function setCol(k,v){S.c[k]=v;theme();saveS()}
+function resetCol(){S.c=Object.assign({},DEF);theme();saveS()}
+function names(){
+ for(var i=0;i<2;i++){document.querySelectorAll('.nm'+i).forEach(function(e){e.textContent=S.n[i]});$('n'+i).value=S.n[i]}
+ $('ia').placeholder=S.n[0];$('ib').placeholder=S.n[1];
+ ['sun','hakam'].forEach(function(k){$(k+'lab').textContent=S.n[BUY[k]]});
+}
+function setName(i,v){S.n[i]=v.trim()||(i?'لهم':'لنا');names();saveS()}
+function totals(){var a=0,b=0;H.forEach(function(r){a+=r[0];b+=r[1]});return [a,b]}
+function render(){
+ var t=totals(),a=t[0],b=t[1];
+ $('sa').textContent=a;$('sb').textContent=b;
+ $('hist').innerHTML=H.slice().reverse().map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>'}).join('');
+ var m='';
+ if(a>=WIN||b>=WIN){m=a===b?'تعادل ('+a+') — لازم صكة زيادة':'الفوز '+(a>b?S.n[0]:S.n[1])+' 🎉'}
+ $('ban').textContent=m;$('ban').style.color=(a===b&&m)?'var(--bad)':'var(--ok)';
+}
+function checkWin(){
+ var t=totals();
+ if((t[0]>=WIN||t[1]>=WIN)&&t[0]!==t[1]){$('popt').textContent='قامت على '+(t[0]>t[1]?S.n[1]:S.n[0]);$('pop').classList.add('on')}
+}
+function closePop(){$('pop').classList.remove('on')}
+function addRound(a,b){
+ if(typeof a!=='number'){a=parseInt($('ia').value)||0;b=parseInt($('ib').value)||0}
+ if(!a&&!b)return;
+ H.push([a,b]);$('ia').value='';$('ib').value='';save();render();checkWin();
+}
+function undo(){H.pop();save();render()}
+function newGame(f){if(f||!H.length||confirm('تبدأ لعبة جديدة؟')){H=[];save();render()}}
+
+var CFG={
+ sun:{n:'حسبة الصن',base:26,tot:130,pr:[['سرا',20,4],['خمسين',50,10],['مية',100,20],['أربعمية',200,40]],
+  conv:function(x){if(x<5)return 0;if(x%10===5)return 2*Math.floor(x/10)+1;return 2*Math.round(x/10)}},
+ hakam:{n:'حسبة الحكم',base:16,tot:162,pr:[['سرا',20,2],['خمسين',50,5],['مية',100,10]],bal:2,
+  conv:function(x){if(x<5)return 0;if(x<=15)return 1;return Math.floor((x+4)/10)}}
+};
+function sel(id,m){var o='';for(var i=0;i<=m;i++)o+='<option>'+i+'</option>';return '<select class="n" id="'+id+'">'+o+'</select>'}
+function build(k){
+ var c=CFG[k],ids=['a','b'],h='<details class="card" open><summary>'+c.n+'</summary>';
+ h+='<label>المشتري</label><div class="bsel"><button id="'+k+'b0" onclick="buy(\''+k+'\',0)"><span class="nm0"></span></button><button id="'+k+'b1" onclick="buy(\''+k+'\',1)"><span class="nm1"></span></button></div>';
+ h+='<label>نقاط <span id="'+k+'lab"></span> من الأوراق (من '+c.tot+')</label><input class="n" id="'+k+'pts" type="number" inputmode="numeric" placeholder="0">';
+ ids.forEach(function(t,i){
+  h+='<label>مشاريع <span class="nm'+i+'"></span></label><div class="g">';
+  c.pr.forEach(function(p,j){h+='<div>'+p[0]+sel(k+t+j,4)+'</div>'});
+  if(c.bal)h+='<div>بلوت'+sel(k+t+'bal',1)+'</div>';
+  h+='</div>';
+ });
+ h+='<button class="calc" onclick="calc(\''+k+'\')">احسب</button><div class="res" id="'+k+'res"></div></details>';
+ return h;
+}
+$('calcs').innerHTML=build('sun')+build('hakam');
+function buy(k,i){BUY[k]=i;$(k+'b0').classList.toggle('sel',i===0);$(k+'b1').classList.toggle('sel',i===1);$(k+'lab').textContent=S.n[i]}
+buy('sun',0);buy('hakam',0);
+var LAST={};
+function calc(k){
+ var c=CFG[k],x=parseInt($(k+'pts').value),by=BUY[k];
+ if(isNaN(x)||x<0||x>c.tot){$(k+'res').textContent='أدخل نقاط صحيحة من 0 إلى '+c.tot;return}
+ var u=[0,0];u[by]=c.conv(x);u[1-by]=c.base-u[by];
+ var info=['a','b'].map(function(t){
+  var top=-1,pts=0,un=0;
+  c.pr.forEach(function(p,j){var n=Math.max(0,parseInt($(k+t+j).value)||0);if(n){top=j;pts+=n*p[1];un+=n*p[2]}});
+  var bal=c.bal?Math.max(0,parseInt($(k+t+'bal').value)||0)*c.bal:0;
+  return {top:top,pts:pts,un:un,bal:bal};
+ });
+ var A=info[0],B=info[1],pa=0,pb=0;
+ if(A.top>B.top||(A.top===B.top&&A.pts>B.pts))pa=A.un;
+ else if(B.top>A.top||(A.top===B.top&&B.pts>A.pts))pb=B.un;
+ var ta=u[0]+pa+A.bal,tb=u[1]+pb+B.bal;
+ var mine=by===0?ta:tb,other=by===0?tb:ta;
+ var tie=mine===other,ok=mine>other,fa=ta,fb=tb;
+ if(!ok&&!tie){
+  var all=c.base+pa+pb;
+  fa=by===0?A.bal:all+A.bal;fb=by===1?B.bal:all+B.bal;
+ }
+ LAST[k]=[fa,fb];
+ var bn=esc(S.n[by]);
+ var msg=tie?'تعادل':(ok?'نجح '+bn+' (المشتري)':'خسر '+bn+' (المشتري)');
+ $(k+'res').innerHTML='<div>'+esc(S.n[0])+': '+ta+' &nbsp;|&nbsp; '+esc(S.n[1])+': '+tb+'</div>'+
+  '<div class="t" style="color:var(--'+(ok?'ok':(tie?'fg':'bad'))+')">'+msg+'</div>'+
+  '<div>النتيجة النهائية — '+esc(S.n[0])+': '+fa+' ، '+esc(S.n[1])+': '+fb+'</div>'+
+  '<button class="reg" onclick="reg(\''+k+'\')">سجّلها في النتيجة</button>';
+}
+function reg(k){var r=LAST[k];if(r){addRound(r[0],r[1]);window.scrollTo({top:0,behavior:'smooth'})}}
+theme();names();render();
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
+</script>
+</body>
+</html>
