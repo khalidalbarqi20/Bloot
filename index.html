@@ -11,12 +11,16 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
 <title>حاسبة البلوت</title>
 <style>
 :root{--bg:#0b1530;--card:#15234d;--fg:#ffffff;--ok:#4ade80;--bad:#f87171;--line:color-mix(in srgb,var(--fg) 18%,transparent);--mut:color-mix(in srgb,var(--fg) 60%,transparent);color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,"Segoe UI",Tahoma,sans-serif;max-width:520px;margin-inline:auto;padding:16px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:"Cairo",system-ui,"Segoe UI",Tahoma,sans-serif;max-width:520px;margin-inline:auto;padding:16px}
+input,select{font-family:inherit}
 button{font:inherit;cursor:pointer;border:0;color:inherit}
 .top{display:flex;justify-content:flex-start}
 .gear{background:none;font-size:24px;padding:4px}
@@ -58,8 +62,10 @@ select,.n{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line
 .go:active,.calc:active,.bsel button:active,.box button:active,.act button:active,.reg:active{transform:translateY(2px);box-shadow:0 2px 4px rgba(0,0,0,.4)}
 .g .n{padding:10px 2px}
 .card{box-shadow:0 10px 24px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08)}
+.tot{margin-top:12px;text-align:center;font-size:16px;color:var(--mut)}.tot b{color:var(--fg);font-size:24px}
 .chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:16px;color:var(--fg)}
 .chk input{width:22px;height:22px}
+.mini{width:auto;margin:0;margin-inline-start:auto;padding:4px 10px}
 </style>
 </head>
 <body>
@@ -74,7 +80,15 @@ select,.n{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line
 <div class="srow"><input type="color" id="c_fg" oninput="setCol('fg',this.value)">النص</div>
 <div class="srow"><input type="color" id="c_ok" oninput="setCol('ok',this.value)">لون التحديد</div>
 <button class="reg" onclick="resetCol()">إعادة الألوان الافتراضية</button>
-<label class="chk"><input type="checkbox" id="snd" onchange="S.snd=this.checked;saveS();if(S.snd)playWin()"> أصوات عند الوصول إلى ١٥٢</label>
+<label class="chk"><input type="checkbox" id="snd" onchange="S.snd=this.checked;saveS()"> تشغيل صوت عند الوصول إلى ١٥٢</label>
+<label>صوت الفوز</label>
+<select class="n" id="sm" onchange="S.sm=this.value;saveS()"></select>
+<div class="srow">
+<button class="reg" style="margin:0" onclick="playWin(1)">▶ تجربة</button>
+<button class="reg" style="margin:0" onclick="$('sf').click()">+ إضافة صوت من الجوال</button>
+</div>
+<input type="file" id="sf" accept="audio/*" hidden onchange="addSnd(this)">
+<div id="slist"></div>
 </div>
 <div class="sc"><div><b class="nm0"></b><span id="sa">0</span></div><div><b class="nm1"></b><span id="sb">0</span></div></div>
 <div class="ban" id="ban"></div>
@@ -88,12 +102,12 @@ select,.n{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line
 <div id="calcs"></div>
 <div id="pop"><div class="box"><h1 id="popt"></h1><button onclick="newGame(1);closePop()">صكة جديدة</button><button onclick="closePop()">إغلاق</button></div></div>
 <script>
-var WIN=152,H=[],BUY={sun:0,hakam:0};
+var WIN=152,H=[],BUY={sun:0,hakam:0},ANC={sun:-1,hakam:-1};
 var DEF={bg:'#0b1530',card:'#15234d',fg:'#ffffff',ok:'#4ade80'};
-var S={n:['لنا','لهم'],c:Object.assign({},DEF),snd:true};
+var S={n:['لنا','لهم'],c:Object.assign({},DEF),snd:true,sm:'rand'};
 var $=function(i){return document.getElementById(i)};
 try{H=JSON.parse(localStorage.getItem('bl')||'[]')}catch(e){}
-try{var s=JSON.parse(localStorage.getItem('blset')||'null');if(s){S.n=s.n||S.n;Object.assign(S.c,s.c);if(typeof s.snd==='boolean')S.snd=s.snd}}catch(e){}
+try{var s=JSON.parse(localStorage.getItem('blset')||'null');if(s){S.n=s.n||S.n;Object.assign(S.c,s.c);if(typeof s.snd==='boolean')S.snd=s.snd;if(typeof s.sm==='string')S.sm=s.sm}}catch(e){}
 function saveS(){try{localStorage.setItem('blset',JSON.stringify(S))}catch(e){}}
 function save(){try{localStorage.setItem('bl',JSON.stringify(H))}catch(e){}}
 function esc(t){return String(t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
@@ -103,7 +117,7 @@ function resetCol(){S.c=Object.assign({},DEF);theme();saveS()}
 function names(){
  for(var i=0;i<2;i++){document.querySelectorAll('.nm'+i).forEach(function(e){e.textContent=S.n[i]});$('n'+i).value=S.n[i]}
  $('ia').placeholder=S.n[0];$('ib').placeholder=S.n[1];
- ['sun','hakam'].forEach(function(k){$(k+'lab').textContent=S.n[BUY[k]]});
+ ['sun','hakam'].forEach(function(k){$(k+'l0').textContent=S.n[BUY[k]];$(k+'l1').textContent=S.n[1-BUY[k]]});
 }
 function setName(i,v){S.n[i]=v.trim()||(i?'لهم':'لنا');names();saveS()}
 function totals(){var a=0,b=0;H.forEach(function(r){a+=r[0];b+=r[1]});return [a,b]}
@@ -115,13 +129,16 @@ function render(){
  if(a>=WIN||b>=WIN){m=a===b?'تعادل ('+a+') — لازم صكة زيادة':'الفوز '+(a>b?S.n[0]:S.n[1])+' 🎉'}
  $('ban').textContent=m;$('ban').style.color=(a===b&&m)?'var(--bad)':'var(--ok)';
 }
-var AC;
+var AC,CS=[];
+try{CS=JSON.parse(localStorage.getItem('blsnd')||'[]')}catch(e){}
+function saveCS(){try{localStorage.setItem('blsnd',JSON.stringify(CS));return true}catch(e){return false}}
 function tone(f,t,d,type,g){
  var o=AC.createOscillator(),v=AC.createGain(),n=AC.currentTime+t;
  o.type=type||'sine';o.frequency.value=f;
  v.gain.setValueAtTime(0.0001,n);v.gain.exponentialRampToValueAtTime(g||.25,n+.02);v.gain.exponentialRampToValueAtTime(0.0001,n+d);
  o.connect(v);v.connect(AC.destination);o.start(n);o.stop(n+d+.05);
 }
+var BN=['فانفير','نصر','بريق','احتفال','حزين'];
 var SND=[
  function(){[523,659,784,1047].forEach(function(f,i){tone(f,i*.15,.45,'triangle')})},
  function(){[392,392,392,523,659].forEach(function(f,i){tone(f,i*.12,.3,'square',.12)})},
@@ -129,12 +146,38 @@ var SND=[
  function(){[784,988,1175,1568].forEach(function(f,i){tone(f,i*.1,.3,'sawtooth',.1)});tone(523,.45,.8,'triangle')},
  function(){[330,262,196,131].forEach(function(f,i){tone(f,i*.25,.4,'sawtooth',.14)})}
 ];
-function playWin(){
- if(!S.snd)return;
+function sndList(){
+ var L=BN.map(function(n,i){return {n:n,f:SND[i]}});
+ CS.forEach(function(c){L.push({n:'🎵 '+c.n,f:function(){var a=new Audio(c.d);a.play()}})});
+ return L;
+}
+function fillSnd(){
+ var L=sndList(),h='<option value="rand">عشوائي من الكل</option>';
+ L.forEach(function(x,i){h+='<option value="'+i+'">'+esc(x.n)+'</option>'});
+ $('sm').innerHTML=h;$('sm').value=S.sm;
+ if($('sm').value!==S.sm){S.sm='rand';$('sm').value='rand'}
+ $('slist').innerHTML=CS.map(function(c,i){return '<div class="srow">'+esc(c.n)+'<button class="reg mini" onclick="delSnd('+i+')">🗑</button></div>'}).join('');
+}
+function addSnd(inp){
+ var f=inp.files[0];inp.value='';if(!f)return;
+ if(f.size>1500000){alert('الملف كبير، اختر مقطعاً أقصر (أقل من 1.5 ميجا)');return}
+ var r=new FileReader();
+ r.onload=function(){
+  CS.push({n:f.name.replace(/\.[^.]+$/,''),d:r.result});
+  if(!saveCS()){CS.pop();alert('تعذر حفظ الصوت، المساحة ممتلئة');return}
+  S.sm=String(sndList().length-1);saveS();fillSnd();
+ };
+ r.readAsDataURL(f);
+}
+function delSnd(i){CS.splice(i,1);saveCS();S.sm='rand';saveS();fillSnd()}
+function playWin(test){
+ if(!S.snd&&!test)return;
  try{
   AC=AC||new (window.AudioContext||window.webkitAudioContext)();
   if(AC.resume)AC.resume();
-  SND[Math.floor(Math.random()*SND.length)]();
+  var L=sndList(),i=S.sm==='rand'?-1:parseInt(S.sm);
+  if(!L[i])i=Math.floor(Math.random()*L.length);
+  L[i].f();
   if(navigator.vibrate)navigator.vibrate([200,100,200]);
  }catch(e){}
 }
@@ -151,66 +194,98 @@ function addRound(a,b){
 function undo(){H.pop();save();render()}
 function newGame(f){if(f||!H.length||confirm('تبدأ لعبة جديدة؟')){H=[];save();render()}}
 
+/*CORE*/
 var CFG={
  sun:{n:'حسبة الصن',base:26,tot:130,pr:[['سرا',20,4],['خمسين',50,10],['مية',100,20],['أربعمية',200,40]],
   conv:function(x){if(x<5)return 0;if(x%10===5)return 2*Math.floor(x/10)+1;return 2*Math.round(x/10)}},
  hakam:{n:'حسبة الحكم',base:16,tot:162,pr:[['سرا',20,2],['خمسين',50,5],['مية',100,10]],bal:2,
   conv:function(x){if(x<5)return 0;if(x<=15)return 1;return Math.floor((x+4)/10)}}
 };
-function sel(id,m){var o='';for(var i=0;i<=m;i++)o+='<option>'+i+'</option>';return '<select class="n" id="'+id+'">'+o+'</select>'}
+function team(k,t){
+ var c=CFG[k],top=-1,pts=0,un=0;
+ c.pr.forEach(function(p,j){var n=t.n[j]||0;if(n){top=j;pts+=n*p[1];un+=n*p[2]}});
+ var nb=c.bal?(t.bal||0):0;
+ return {top:top,pts:pts,un:un,bal:nb*(c.bal||0),bp:nb*20};
+}
+function pinfo(k,T){
+ var c=CFG[k],A=team(k,T[0]),B=team(k,T[1]),pu=[0,0],pp=[0,0];
+ if(A.top>B.top||(A.top===B.top&&A.pts>B.pts)){pu[0]=A.un;pp[0]=A.pts}
+ else if(B.top>A.top||(A.top===B.top&&B.pts>A.pts)){pu[1]=B.un;pp[1]=B.pts}
+ return {I:[A,B],pu:pu,pp:pp,total:c.tot+pp[0]+pp[1]+A.bp+B.bp};
+}
+function evalG(k,by,fb,T){
+ var c=CFG[k],pi=pinfo(k,T),P=[0,0];
+ P[by]=fb;P[1-by]=pi.total-fb;
+ if(!(P[0]>=0&&P[1]>=0))return {err:'range',total:pi.total};
+ var cp=[P[0]-pi.pp[0]-pi.I[0].bp,P[1]-pi.pp[1]-pi.I[1].bp];
+ if(cp[0]<0||cp[1]<0)return {err:'proj',t:cp[0]<0?0:1};
+ var u=[0,0];u[by]=c.conv(cp[by]);u[1-by]=c.base-u[by];
+ var ta=[u[0]+pi.pu[0]+pi.I[0].bal,u[1]+pi.pu[1]+pi.I[1].bal];
+ var m,o;
+ if(k==='hakam'){m=P[by];o=P[1-by]}else{m=ta[by];o=ta[1-by]}
+ var tie=m===o,ok=m>o,f=ta.slice();
+ if(!ok&&!tie){var all=c.base+pi.pu[0]+pi.pu[1];f[by]=pi.I[by].bal;f[1-by]=all+pi.I[1-by].bal}
+ return {total:pi.total,P:P,cp:cp,u:ta,tie:tie,ok:ok,fin:f};
+}
+/*ENDCORE*/
+function sel(k,id,m){var o='';for(var i=0;i<=m;i++)o+='<option>'+i+'</option>';return '<select class="n" id="'+id+'" onchange="refresh(\''+k+'\')">'+o+'</select>'}
 function build(k){
  var c=CFG[k],ids=['a','b'],h='<details class="card"><summary>'+c.n+'</summary>';
  h+='<label>المشتري</label><div class="bsel"><button id="'+k+'buy0" onclick="buy(\''+k+'\',0)"><span class="nm0"></span></button><button id="'+k+'buy1" onclick="buy(\''+k+'\',1)"><span class="nm1"></span></button></div>';
- h+='<label>نقاط <span id="'+k+'lab"></span> من الأوراق (من '+c.tot+')</label><input class="n" id="'+k+'pts" type="number" inputmode="numeric" placeholder="0">';
+ h+='<div class="tot">إجمالي اللعب: <b id="'+k+'tot">'+c.tot+'</b> نقطة</div>';
+ h+='<label>نقاط <span id="'+k+'l0"></span> (المشتري) مع المشاريع</label><input class="n" id="'+k+'f0" type="number" inputmode="numeric" placeholder="0" oninput="typed(\''+k+'\',0)">';
+ h+='<label>نقاط <span id="'+k+'l1"></span> (الخصم) — تظهر تلقائياً</label><input class="n" id="'+k+'f1" type="number" inputmode="numeric" placeholder="0" oninput="typed(\''+k+'\',1)">';
  ids.forEach(function(t,i){
   h+='<label>مشاريع <span class="nm'+i+'"></span></label><div class="g">';
-  c.pr.forEach(function(p,j){h+='<div>'+p[0]+sel(k+'_'+t+j,4)+'</div>'});
-  if(c.bal)h+='<div>بلوت'+sel(k+'_'+t+'bal',1)+'</div>';
+  c.pr.forEach(function(p,j){h+='<div>'+p[0]+sel(k,k+'_'+t+j,4)+'</div>'});
+  if(c.bal)h+='<div>بلوت'+sel(k,k+'_'+t+'bal',1)+'</div>';
   h+='</div>';
  });
  h+='<button class="calc" onclick="calc(\''+k+'\')">احسب</button><div class="res" id="'+k+'res"></div></details>';
  return h;
 }
 $('calcs').innerHTML=build('sun')+build('hakam');
-function buy(k,i){BUY[k]=i;$(k+'buy0').classList.toggle('sel',i===0);$(k+'buy1').classList.toggle('sel',i===1);$(k+'lab').textContent=S.n[i]}
+function readT(k){
+ var c=CFG[k];
+ return ['a','b'].map(function(t){
+  return {n:c.pr.map(function(p,j){return Math.max(0,parseInt($(k+'_'+t+j).value)||0)}),bal:c.bal?Math.max(0,parseInt($(k+'_'+t+'bal').value)||0):0};
+ });
+}
+function refresh(k){
+ var pi=pinfo(k,readT(k));$(k+'tot').textContent=pi.total;
+ var a=ANC[k];if(a<0)return;
+ var x=parseInt($(k+'f'+a).value),o=$(k+'f'+(1-a));
+ if(isNaN(x)){o.value='';return}
+ o.value=(pi.total-x>=0)?(pi.total-x):'';
+}
+function typed(k,i){ANC[k]=i;refresh(k)}
+function buy(k,i){
+ if(i!==BUY[k]){var a=$(k+'f0'),b=$(k+'f1'),t=a.value;a.value=b.value;b.value=t;if(ANC[k]>=0)ANC[k]=1-ANC[k]}
+ BUY[k]=i;$(k+'buy0').classList.toggle('sel',i===0);$(k+'buy1').classList.toggle('sel',i===1);names();refresh(k);
+}
 buy('sun',0);buy('hakam',0);
 var LAST={};
 function calc(k){
- var c=CFG[k],x=parseInt($(k+'pts').value),by=BUY[k];
- if(isNaN(x)||x<0||x>c.tot){$(k+'res').textContent='أدخل نقاط صحيحة من 0 إلى '+c.tot;return}
- var u=[0,0];u[by]=c.conv(x);u[1-by]=c.base-u[by];
- var info=['a','b'].map(function(t){
-  var top=-1,pts=0,un=0;
-  c.pr.forEach(function(p,j){var n=Math.max(0,parseInt($(k+'_'+t+j).value)||0);if(n){top=j;pts+=n*p[1];un+=n*p[2]}});
-  var nb=c.bal?Math.max(0,parseInt($(k+'_'+t+'bal').value)||0):0;
-  return {top:top,pts:pts,un:un,bal:nb*(c.bal||0),bp:nb*20};
- });
- var A=info[0],B=info[1],pa=0,pb=0,ppa=0,ppb=0;
- if(A.top>B.top||(A.top===B.top&&A.pts>B.pts)){pa=A.un;ppa=A.pts}
- else if(B.top>A.top||(A.top===B.top&&B.pts>A.pts)){pb=B.un;ppb=B.pts}
- var ta=u[0]+pa+A.bal,tb=u[1]+pb+B.bal;
- var mine=by===0?ta:tb,other=by===0?tb:ta,ptsLine='';
- if(k==='hakam'){
-  var q=[0,0];q[by]=x;q[1-by]=c.tot-x;
-  var qa=q[0]+ppa+A.bp,qb=q[1]+ppb+B.bp;
-  mine=by===0?qa:qb;other=by===0?qb:qa;
-  ptsLine='<div>النقاط — '+esc(S.n[0])+': '+qa+' | '+esc(S.n[1])+': '+qb+' (من '+(qa+qb)+')</div>';
- }
- var tie=mine===other,ok=mine>other,fa=ta,fb=tb;
- if(!ok&&!tie){
-  var all=c.base+pa+pb;
-  fa=by===0?A.bal:all+A.bal;fb=by===1?B.bal:all+B.bal;
- }
- LAST[k]=[fa,fb];
+ var by=BUY[k],T=readT(k),res=$(k+'res');
+ refresh(k);
+ var f0=parseInt($(k+'f0').value);
+ if(isNaN(f0)){res.textContent=ANC[k]<0?'اكتب نقاط المشتري أو الخصم أولاً':'النقاط أكبر من إجمالي اللعب ('+$(k+'tot').textContent+')';return}
+ var r=evalG(k,by,f0,T);
+ if(r.err==='range'){res.textContent='النقاط لازم تكون بين 0 و '+r.total;return}
+ if(r.err==='proj'){res.textContent='نقاط '+S.n[r.t]+' أقل من نقاط مشاريعه، راجع الأرقام';return}
+ LAST[k]=r.fin;
  var bn=esc(S.n[by]);
- var msg=tie?'تعادل':(ok?'نجح '+bn+' (المشتري)':'خسر '+bn+' (المشتري)');
- $(k+'res').innerHTML=ptsLine+'<div>الأعداد — '+esc(S.n[0])+': '+ta+' | '+esc(S.n[1])+': '+tb+'</div>'+
-  '<div class="t" style="color:var(--'+(ok?'ok':(tie?'fg':'bad'))+')">'+msg+'</div>'+
-  '<div>النتيجة النهائية — '+esc(S.n[0])+': '+fa+' ، '+esc(S.n[1])+': '+fb+'</div>'+
+ var msg=r.tie?'تعادل':(r.ok?'نجح '+bn+' (المشتري)':'خسر '+bn+' (المشتري)');
+ res.innerHTML='<div>إجمالي اللعب: <b>'+r.total+'</b> نقطة</div>'+
+  '<div>نقاط '+bn+' (المشتري): <b>'+r.P[by]+'</b></div>'+
+  '<div>نقاط '+esc(S.n[1-by])+' (الخصم): <b>'+r.P[1-by]+'</b></div>'+
+  '<div>الأعداد — '+esc(S.n[0])+': '+r.u[0]+' | '+esc(S.n[1])+': '+r.u[1]+'</div>'+
+  '<div class="t" style="color:var(--'+(r.ok?'ok':(r.tie?'fg':'bad'))+')">'+msg+'</div>'+
+  '<div>النتيجة النهائية — '+esc(S.n[0])+': '+r.fin[0]+' ، '+esc(S.n[1])+': '+r.fin[1]+'</div>'+
   '<button class="reg" onclick="reg(\''+k+'\')">سجّلها في النتيجة</button>';
 }
 function reg(k){var r=LAST[k];if(r){addRound(r[0],r[1]);window.scrollTo({top:0,behavior:'smooth'})}}
-theme();names();render();
+theme();names();fillSnd();render();
 if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 </script>
 </body>
