@@ -214,11 +214,10 @@ function pinfo(k,T){
  return {I:[A,B],pu:pu,pp:pp,total:c.tot+pp[0]+pp[1]+A.bp+B.bp};
 }
 function evalG(k,by,fb,T){
- var c=CFG[k],pi=pinfo(k,T),P=[0,0];
- P[by]=fb;P[1-by]=pi.total-fb;
- if(!(P[0]>=0&&P[1]>=0))return {err:'range',total:pi.total};
- var cp=[P[0]-pi.pp[0]-pi.I[0].bp,P[1]-pi.pp[1]-pi.I[1].bp];
- if(cp[0]<0||cp[1]<0)return {err:'proj',t:cp[0]<0?0:1};
+ var c=CFG[k],pi=pinfo(k,T),cp=[0,0];
+ cp[by]=fb;cp[1-by]=c.tot-fb;
+ if(!(cp[0]>=0&&cp[1]>=0))return {err:'range',total:c.tot};
+ var P=[cp[0]+pi.pp[0]+pi.I[0].bp,cp[1]+pi.pp[1]+pi.I[1].bp];
  var u=[0,0];u[by]=c.conv(cp[by]);u[1-by]=c.base-u[by];
  var ta=[u[0]+pi.pu[0]+pi.I[0].bal,u[1]+pi.pu[1]+pi.I[1].bal];
  var m,o;
@@ -233,8 +232,9 @@ function build(k){
  var c=CFG[k],ids=['a','b'],h='<details class="card"><summary>'+c.n+'</summary>';
  h+='<label>المشتري</label><div class="bsel"><button id="'+k+'buy0" onclick="buy(\''+k+'\',0)"><span class="nm0"></span></button><button id="'+k+'buy1" onclick="buy(\''+k+'\',1)"><span class="nm1"></span></button></div>';
  h+='<div class="tot">إجمالي اللعب: <b id="'+k+'tot">'+c.tot+'</b> نقطة</div>';
- h+='<label>نقاط <span id="'+k+'l0"></span> (المشتري) مع المشاريع</label><input class="n" id="'+k+'f0" type="number" inputmode="numeric" placeholder="0" oninput="typed(\''+k+'\',0)">';
+ h+='<label>نقاط <span id="'+k+'l0"></span> (المشتري) من الأوراق (من '+c.tot+')</label><input class="n" id="'+k+'f0" type="number" inputmode="numeric" placeholder="0" oninput="typed(\''+k+'\',0)">';
  h+='<label>نقاط <span id="'+k+'l1"></span> (الخصم) — تظهر تلقائياً</label><input class="n" id="'+k+'f1" type="number" inputmode="numeric" placeholder="0" oninput="typed(\''+k+'\',1)">';
+ h+='<div class="tot" id="'+k+'sum"></div>';
  ids.forEach(function(t,i){
   h+='<label>مشاريع <span class="nm'+i+'"></span></label><div class="g">';
   c.pr.forEach(function(p,j){h+='<div>'+p[0]+sel(k,k+'_'+t+j,4)+'</div>'});
@@ -252,11 +252,17 @@ function readT(k){
  });
 }
 function refresh(k){
- var pi=pinfo(k,readT(k));$(k+'tot').textContent=pi.total;
- var a=ANC[k];if(a<0)return;
+ var c=CFG[k],T=readT(k),pi=pinfo(k,T);$(k+'tot').textContent=pi.total;
+ var a=ANC[k],sm=$(k+'sum');sm.innerHTML='';
+ if(a<0)return;
  var x=parseInt($(k+'f'+a).value),o=$(k+'f'+(1-a));
  if(isNaN(x)){o.value='';return}
- o.value=(pi.total-x>=0)?(pi.total-x):'';
+ o.value=(c.tot-x>=0)?(c.tot-x):'';
+ var f0=parseInt($(k+'f0').value);
+ if(isNaN(f0))return;
+ var r=evalG(k,BUY[k],f0,T),by=BUY[k];
+ if(r.err)return;
+ sm.innerHTML='المجموع مع المشاريع — '+esc(S.n[by])+': <b>'+r.P[by]+'</b> | '+esc(S.n[1-by])+': <b>'+r.P[1-by]+'</b>';
 }
 function typed(k,i){ANC[k]=i;refresh(k)}
 function buy(k,i){
@@ -269,16 +275,15 @@ function calc(k){
  var by=BUY[k],T=readT(k),res=$(k+'res');
  refresh(k);
  var f0=parseInt($(k+'f0').value);
- if(isNaN(f0)){res.textContent=ANC[k]<0?'اكتب نقاط المشتري أو الخصم أولاً':'النقاط أكبر من إجمالي اللعب ('+$(k+'tot').textContent+')';return}
+ if(isNaN(f0)){res.textContent=ANC[k]<0?'اكتب نقاط المشتري أو الخصم أولاً':'النقاط أكبر من إجمالي الأوراق ('+CFG[k].tot+')';return}
  var r=evalG(k,by,f0,T);
- if(r.err==='range'){res.textContent='النقاط لازم تكون بين 0 و '+r.total;return}
- if(r.err==='proj'){res.textContent='نقاط '+S.n[r.t]+' أقل من نقاط مشاريعه، راجع الأرقام';return}
+ if(r.err){res.textContent='نقاط الأوراق لازم تكون بين 0 و '+r.total;return}
  LAST[k]=r.fin;
  var bn=esc(S.n[by]);
  var msg=r.tie?'تعادل':(r.ok?'نجح '+bn+' (المشتري)':'خسر '+bn+' (المشتري)');
  res.innerHTML='<div>إجمالي اللعب: <b>'+r.total+'</b> نقطة</div>'+
-  '<div>نقاط '+bn+' (المشتري): <b>'+r.P[by]+'</b></div>'+
-  '<div>نقاط '+esc(S.n[1-by])+' (الخصم): <b>'+r.P[1-by]+'</b></div>'+
+  '<div>نقاط '+bn+' (المشتري): <b>'+r.P[by]+'</b> ('+r.cp[by]+' أوراق'+(r.P[by]-r.cp[by]?' + '+(r.P[by]-r.cp[by])+' مشاريع':'')+')</div>'+
+  '<div>نقاط '+esc(S.n[1-by])+' (الخصم): <b>'+r.P[1-by]+'</b> ('+r.cp[1-by]+' أوراق'+(r.P[1-by]-r.cp[1-by]?' + '+(r.P[1-by]-r.cp[1-by])+' مشاريع':'')+')</div>'+
   '<div>الأعداد — '+esc(S.n[0])+': '+r.u[0]+' | '+esc(S.n[1])+': '+r.u[1]+'</div>'+
   '<div class="t" style="color:var(--'+(r.ok?'ok':(r.tie?'fg':'bad'))+')">'+msg+'</div>'+
   '<div>النتيجة النهائية — '+esc(S.n[0])+': '+r.fin[0]+' ، '+esc(S.n[1])+': '+r.fin[1]+'</div>'+
