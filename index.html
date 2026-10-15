@@ -58,6 +58,8 @@ select,.n{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line
 .go:active,.calc:active,.bsel button:active,.box button:active,.act button:active,.reg:active{transform:translateY(2px);box-shadow:0 2px 4px rgba(0,0,0,.4)}
 .g .n{padding:10px 2px}
 .card{box-shadow:0 10px 24px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.08)}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:16px;color:var(--fg)}
+.chk input{width:22px;height:22px}
 </style>
 </head>
 <body>
@@ -72,6 +74,7 @@ select,.n{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line
 <div class="srow"><input type="color" id="c_fg" oninput="setCol('fg',this.value)">النص</div>
 <div class="srow"><input type="color" id="c_ok" oninput="setCol('ok',this.value)">لون التحديد</div>
 <button class="reg" onclick="resetCol()">إعادة الألوان الافتراضية</button>
+<label class="chk"><input type="checkbox" id="snd" onchange="S.snd=this.checked;saveS();if(S.snd)playWin()"> أصوات عند الوصول إلى ١٥٢</label>
 </div>
 <div class="sc"><div><b class="nm0"></b><span id="sa">0</span></div><div><b class="nm1"></b><span id="sb">0</span></div></div>
 <div class="ban" id="ban"></div>
@@ -87,14 +90,14 @@ select,.n{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line
 <script>
 var WIN=152,H=[],BUY={sun:0,hakam:0};
 var DEF={bg:'#0b1530',card:'#15234d',fg:'#ffffff',ok:'#4ade80'};
-var S={n:['لنا','لهم'],c:Object.assign({},DEF)};
+var S={n:['لنا','لهم'],c:Object.assign({},DEF),snd:true};
 var $=function(i){return document.getElementById(i)};
 try{H=JSON.parse(localStorage.getItem('bl')||'[]')}catch(e){}
-try{var s=JSON.parse(localStorage.getItem('blset')||'null');if(s){S.n=s.n||S.n;Object.assign(S.c,s.c)}}catch(e){}
+try{var s=JSON.parse(localStorage.getItem('blset')||'null');if(s){S.n=s.n||S.n;Object.assign(S.c,s.c);if(typeof s.snd==='boolean')S.snd=s.snd}}catch(e){}
 function saveS(){try{localStorage.setItem('blset',JSON.stringify(S))}catch(e){}}
 function save(){try{localStorage.setItem('bl',JSON.stringify(H))}catch(e){}}
 function esc(t){return String(t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
-function theme(){var r=document.documentElement.style;for(var k in S.c){r.setProperty('--'+k,S.c[k]);$('c_'+k).value=S.c[k]}}
+function theme(){var r=document.documentElement.style;for(var k in S.c){r.setProperty('--'+k,S.c[k]);$('c_'+k).value=S.c[k]}$('snd').checked=S.snd}
 function setCol(k,v){S.c[k]=v;theme();saveS()}
 function resetCol(){S.c=Object.assign({},DEF);theme();saveS()}
 function names(){
@@ -112,9 +115,32 @@ function render(){
  if(a>=WIN||b>=WIN){m=a===b?'تعادل ('+a+') — لازم صكة زيادة':'الفوز '+(a>b?S.n[0]:S.n[1])+' 🎉'}
  $('ban').textContent=m;$('ban').style.color=(a===b&&m)?'var(--bad)':'var(--ok)';
 }
+var AC;
+function tone(f,t,d,type,g){
+ var o=AC.createOscillator(),v=AC.createGain(),n=AC.currentTime+t;
+ o.type=type||'sine';o.frequency.value=f;
+ v.gain.setValueAtTime(0.0001,n);v.gain.exponentialRampToValueAtTime(g||.25,n+.02);v.gain.exponentialRampToValueAtTime(0.0001,n+d);
+ o.connect(v);v.connect(AC.destination);o.start(n);o.stop(n+d+.05);
+}
+var SND=[
+ function(){[523,659,784,1047].forEach(function(f,i){tone(f,i*.15,.45,'triangle')})},
+ function(){[392,392,392,523,659].forEach(function(f,i){tone(f,i*.12,.3,'square',.12)})},
+ function(){for(var i=0;i<9;i++)tone(600+Math.random()*900,i*.09,.18,'sine')},
+ function(){[784,988,1175,1568].forEach(function(f,i){tone(f,i*.1,.3,'sawtooth',.1)});tone(523,.45,.8,'triangle')},
+ function(){[330,262,196,131].forEach(function(f,i){tone(f,i*.25,.4,'sawtooth',.14)})}
+];
+function playWin(){
+ if(!S.snd)return;
+ try{
+  AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  if(AC.resume)AC.resume();
+  SND[Math.floor(Math.random()*SND.length)]();
+  if(navigator.vibrate)navigator.vibrate([200,100,200]);
+ }catch(e){}
+}
 function checkWin(){
  var t=totals();
- if((t[0]>=WIN||t[1]>=WIN)&&t[0]!==t[1]){$('popt').textContent='قامت على '+(t[0]>t[1]?S.n[1]:S.n[0]);$('pop').classList.add('on')}
+ if((t[0]>=WIN||t[1]>=WIN)&&t[0]!==t[1]){$('popt').textContent='قامت على '+(t[0]>t[1]?S.n[1]:S.n[0]);$('pop').classList.add('on');playWin()}
 }
 function closePop(){$('pop').classList.remove('on')}
 function addRound(a,b){
@@ -133,20 +159,20 @@ var CFG={
 };
 function sel(id,m){var o='';for(var i=0;i<=m;i++)o+='<option>'+i+'</option>';return '<select class="n" id="'+id+'">'+o+'</select>'}
 function build(k){
- var c=CFG[k],ids=['a','b'],h='<details class="card" open><summary>'+c.n+'</summary>';
- h+='<label>المشتري</label><div class="bsel"><button id="'+k+'b0" onclick="buy(\''+k+'\',0)"><span class="nm0"></span></button><button id="'+k+'b1" onclick="buy(\''+k+'\',1)"><span class="nm1"></span></button></div>';
+ var c=CFG[k],ids=['a','b'],h='<details class="card"><summary>'+c.n+'</summary>';
+ h+='<label>المشتري</label><div class="bsel"><button id="'+k+'buy0" onclick="buy(\''+k+'\',0)"><span class="nm0"></span></button><button id="'+k+'buy1" onclick="buy(\''+k+'\',1)"><span class="nm1"></span></button></div>';
  h+='<label>نقاط <span id="'+k+'lab"></span> من الأوراق (من '+c.tot+')</label><input class="n" id="'+k+'pts" type="number" inputmode="numeric" placeholder="0">';
  ids.forEach(function(t,i){
   h+='<label>مشاريع <span class="nm'+i+'"></span></label><div class="g">';
-  c.pr.forEach(function(p,j){h+='<div>'+p[0]+sel(k+t+j,4)+'</div>'});
-  if(c.bal)h+='<div>بلوت'+sel(k+t+'bal',1)+'</div>';
+  c.pr.forEach(function(p,j){h+='<div>'+p[0]+sel(k+'_'+t+j,4)+'</div>'});
+  if(c.bal)h+='<div>بلوت'+sel(k+'_'+t+'bal',1)+'</div>';
   h+='</div>';
  });
  h+='<button class="calc" onclick="calc(\''+k+'\')">احسب</button><div class="res" id="'+k+'res"></div></details>';
  return h;
 }
 $('calcs').innerHTML=build('sun')+build('hakam');
-function buy(k,i){BUY[k]=i;$(k+'b0').classList.toggle('sel',i===0);$(k+'b1').classList.toggle('sel',i===1);$(k+'lab').textContent=S.n[i]}
+function buy(k,i){BUY[k]=i;$(k+'buy0').classList.toggle('sel',i===0);$(k+'buy1').classList.toggle('sel',i===1);$(k+'lab').textContent=S.n[i]}
 buy('sun',0);buy('hakam',0);
 var LAST={};
 function calc(k){
@@ -155,8 +181,8 @@ function calc(k){
  var u=[0,0];u[by]=c.conv(x);u[1-by]=c.base-u[by];
  var info=['a','b'].map(function(t){
   var top=-1,pts=0,un=0;
-  c.pr.forEach(function(p,j){var n=Math.max(0,parseInt($(k+t+j).value)||0);if(n){top=j;pts+=n*p[1];un+=n*p[2]}});
-  var nb=c.bal?Math.max(0,parseInt($(k+t+'bal').value)||0):0;
+  c.pr.forEach(function(p,j){var n=Math.max(0,parseInt($(k+'_'+t+j).value)||0);if(n){top=j;pts+=n*p[1];un+=n*p[2]}});
+  var nb=c.bal?Math.max(0,parseInt($(k+'_'+t+'bal').value)||0):0;
   return {top:top,pts:pts,un:un,bal:nb*(c.bal||0),bp:nb*20};
  });
  var A=info[0],B=info[1],pa=0,pb=0,ppa=0,ppb=0;
